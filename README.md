@@ -1,6 +1,8 @@
 # open-in-totalcmd
 
-Open files and folders in Total Commander via `open-external` service.
+Open files and folders in Total Commander.
+
+Uses the `open-external` service to launch Total Commander.
 
 ## Features
 
