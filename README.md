@@ -23,7 +23,7 @@ The package automatically registers as a handler for the `open-external` service
 
 ## Services
 
-- **[open-external](https://lumine-code.github.io/docs.html#services/open-external)** (`^1.0.0`): consumed to register a handler that routes directory opening and show-in-folder operations to Total Commander.
+- **open-external** (`^1.0.0`): consumed to register a handler that routes directory opening and show-in-folder operations to Total Commander.
 
 ## Contributing
 
