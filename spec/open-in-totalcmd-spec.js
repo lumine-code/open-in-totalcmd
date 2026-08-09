@@ -6,8 +6,8 @@ describe("open-in-totalcmd", () => {
   let openExternalModule, mainModule, tempDir, tempFile;
 
   beforeEach(async () => {
-    openExternalModule = (await atom.packages.activatePackage("open-external")).mainModule;
-    mainModule = (await atom.packages.activatePackage("open-in-totalcmd")).mainModule;
+    openExternalModule = (await lumine.packages.activatePackage("open-external")).mainModule;
+    mainModule = (await lumine.packages.activatePackage("open-in-totalcmd")).mainModule;
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "open-in-totalcmd-"));
     tempFile = path.join(tempDir, "file.txt");
     fs.writeFileSync(tempFile, "content");
@@ -33,7 +33,7 @@ describe("open-in-totalcmd", () => {
   });
 
   it("observes the executable path setting", () => {
-    atom.config.set("open-in-totalcmd.path", "custom/path/TOTALCMD64.EXE");
+    lumine.config.set("open-in-totalcmd.path", "custom/path/TOTALCMD64.EXE");
     expect(mainModule.exePath).toBe("custom/path/TOTALCMD64.EXE");
   });
 
@@ -43,7 +43,7 @@ describe("open-in-totalcmd", () => {
   });
 
   it("opens directories with the configured executable", async () => {
-    atom.config.set("open-in-totalcmd.path", "git");
+    lumine.config.set("open-in-totalcmd.path", "git");
     const process = await getHandler().openExternal(tempDir);
     expect(process).toBeDefined();
     expect(typeof process.kill).toBe("function");
@@ -51,7 +51,7 @@ describe("open-in-totalcmd", () => {
   });
 
   it("shows files in the configured executable", () => {
-    atom.config.set("open-in-totalcmd.path", "git");
+    lumine.config.set("open-in-totalcmd.path", "git");
     const process = getHandler().showInFolder(tempFile);
     expect(process).toBeDefined();
     expect(typeof process.kill).toBe("function");
@@ -60,7 +60,7 @@ describe("open-in-totalcmd", () => {
 
   it("removes its handler on deactivation", async () => {
     expect(getHandler()).toBeDefined();
-    await atom.packages.deactivatePackage("open-in-totalcmd");
+    await lumine.packages.deactivatePackage("open-in-totalcmd");
     expect(getHandler()).toBeUndefined();
   });
 });
