@@ -12,7 +12,7 @@ Uses the `open-external` service to launch Total Commander.
 
 ## Installation
 
-To install `open-in-totalcmd` search for _open-in-totalcmd_ in the Install pane of the Lumine settings or run `lumine --install lumine-code/open-in-totalcmd`.
+To install `open-in-totalcmd` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/open-in-totalcmd`.
 
 ## Usage
 
@@ -23,7 +23,7 @@ The package automatically registers as a handler for the `open-external` service
 
 ## Services
 
-- **open-external** (`^1.0.0`): consumed to register a handler that routes directory opening and show-in-folder operations to Total Commander.
+- `open-external`: consumed to register a handler that routes directory opening and show-in-folder operations to Total Commander.
 
 ## Contributing
 
