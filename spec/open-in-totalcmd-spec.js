@@ -1,6 +1,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { Disposable } = require("lumine");
 
 describe("open-in-totalcmd", () => {
   let openExternalModule, mainModule, tempDir, tempFile, exePath, launch;
@@ -97,5 +98,45 @@ describe("open-in-totalcmd", () => {
     expect(getHandler()).toBeDefined();
     await lumine.packages.deactivatePackage("open-in-totalcmd");
     expect(getHandler()).toBeUndefined();
+  });
+
+  it("removes only the handler owned by a disconnected provider", () => {
+    const original = mainModule.handlerDisposable;
+    const disposeFirst = jasmine.createSpy("dispose first handler");
+    const disposeSecond = jasmine.createSpy("dispose second handler");
+    const first = new Disposable(disposeFirst);
+    const second = new Disposable(disposeSecond);
+    const firstEdge = mainModule.consumeOpenExternal({ registerHandler: () => first });
+    const secondEdge = mainModule.consumeOpenExternal({ registerHandler: () => second });
+    try {
+      firstEdge.dispose();
+      expect(disposeFirst).toHaveBeenCalledTimes(1);
+      expect(disposeSecond).not.toHaveBeenCalled();
+      expect(mainModule.handlerDisposable).toBe(second);
+      secondEdge.dispose();
+      expect(disposeSecond).toHaveBeenCalledTimes(1);
+      expect(mainModule.handlerDisposable).toBeNull();
+    } finally {
+      firstEdge.dispose();
+      secondEdge.dispose();
+      mainModule.handlerDisposable = original;
+    }
+  });
+
+  it("can disconnect its provider after deactivation", () => {
+    const original = mainModule.handlerDisposable;
+    const disposeHandler = jasmine.createSpy("dispose handler");
+    const registration = new Disposable(disposeHandler);
+    const edge = mainModule.consumeOpenExternal({ registerHandler: () => registration });
+    try {
+      mainModule.deactivate();
+      expect(mainModule.handlerDisposable).toBeNull();
+      expect(() => edge.dispose()).not.toThrow();
+      expect(disposeHandler).toHaveBeenCalledTimes(1);
+    } finally {
+      edge.dispose();
+      mainModule.activate();
+      mainModule.handlerDisposable = original;
+    }
   });
 });
