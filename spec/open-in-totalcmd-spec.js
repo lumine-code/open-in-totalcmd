@@ -4,12 +4,21 @@ const path = require("path");
 const { Disposable } = require("lumine");
 
 describe("open-in-totalcmd", () => {
-  let openExternalModule, mainModule, tempDir, tempFile, exePath, launch;
+  let openExternalModule, mainModule, tempDir, tempFile, exePath, launch, shellSpies, temporaryRoot;
 
   beforeEach(async () => {
+    shellSpies = {};
+    // Baseline junction cases may decline the handler. Stub the actual system
+    // fallback too, before activation: no native GUI app may be launched.
+    for (const name of ["openPath", "openExternal", "openApplication", "showItemInFolder"])
+      shellSpies[name] = spyOn(lumine.shell, name).and.resolveTo(
+        name === "openApplication" ? 4242 : "",
+      );
+    launch = shellSpies.openApplication;
     openExternalModule = (await lumine.packages.activatePackage("open-external")).mainModule;
     mainModule = (await lumine.packages.activatePackage("open-in-totalcmd")).mainModule;
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "open-in-totalcmd-"));
+    temporaryRoot = fs.realpathSync.native(os.tmpdir());
+    tempDir = fs.realpathSync.native(fs.mkdtempSync(path.join(temporaryRoot, "open-in-totalcmd-")));
     tempFile = path.join(tempDir, "file & 100% [model].txt");
     fs.writeFileSync(tempFile, "content");
     exePath = path.join(
@@ -19,19 +28,29 @@ describe("open-in-totalcmd", () => {
       "TOTALCMD64.EXE",
     );
     lumine.config.set("open-in-totalcmd.path", exePath);
-    launch = spyOn(lumine.shell, "openApplication").and.resolveTo(4242);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await Promise.allSettled(
+      Object.values(shellSpies).flatMap((spy) => spy.calls.all().map((call) => call.returnValue)),
+    );
+    lumine.config.unset("open-in-totalcmd.path");
+    await lumine.packages.deactivatePackage("open-in-totalcmd");
+    await lumine.packages.deactivatePackage("open-external");
+    await lumine.fileWatchClient.settlePendingTeardown();
     // Retries because Windows keeps a directory non-empty until the last handle on a child
     // closes, and `force` swallows only ENOENT.
+    const relative = path.relative(temporaryRoot, tempDir);
+    if (path.isAbsolute(relative) || relative === ".." || relative.startsWith(`..${path.sep}`))
+      throw Error("Total Commander fixture escaped its root");
     fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
   });
 
   function getHandler() {
     return openExternalModule.handlers.find(
-      (handler) => typeof handler.openExternal === "function" && handler.priority === 0,
-    );
+      ({ handler, active }) =>
+        active && typeof handler.openExternal === "function" && handler.priority === 0,
+    )?.handler;
   }
 
   it("registers a handler with the open-external service", () => {
@@ -79,7 +98,7 @@ describe("open-in-totalcmd", () => {
     it(`reports a failed ${operation} launch and keeps the request claimed`, async () => {
       launch.and.rejectWith(new Error("Executable not found"));
       const warning = spyOn(lumine.notifications, "addWarning");
-      const systemFallback = spyOn(lumine.shell, fallback).and.resolveTo("");
+      const systemFallback = shellSpies[fallback];
       expect(await openExternalModule[operation](target())).toBe("");
       expect(launch).toHaveBeenCalledTimes(1);
       expect(warning).toHaveBeenCalledOnceWith("Cannot open Total Commander", {
