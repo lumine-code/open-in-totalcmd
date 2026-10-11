@@ -21,6 +21,8 @@ The package automatically registers as a handler for the `open-external` service
 - When opening a directory, it opens in Total Commander.
 - When showing a file in folder, it opens Total Commander with the file selected.
 
+Each request uses the executable configured when it starts. Changing the setting affects subsequent requests, and a launch failure identifies the executable that was attempted.
+
 ## Services
 
 - `open-external`: consumed to register a handler that routes directory opening and show-in-folder operations to Total Commander.
